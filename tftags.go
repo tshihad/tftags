@@ -53,8 +53,17 @@ func recursive(rv reflect.Value, d *schema.ResourceData, path string, schemaMap 
 				recursive(rv.Index(i), d, fmt.Sprintf("%s.%d", path, i), array[i])
 			}
 		}
+	case reflect.Map:
+		if m, ok := schemaMap.(map[string]interface{}); ok {
+			rvMap := reflect.MakeMap(rv.Type())
+			rv.Set(rvMap)
+
+			for k, v := range m {
+				rv.SetMapIndex(reflect.ValueOf(k), reflect.ValueOf(v))
+				// recursive(rv.MapIndex(reflect.ValueOf(k)), d, fmt.Sprintf("%s.%s", path, k), v)
+			}
+		}
 	default:
-		fmt.Println(rv.Kind())
 		rv.Set(reflect.ValueOf(schemaMap))
 	}
 }
