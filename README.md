@@ -39,6 +39,5 @@ You can parse above schema to following struct
 ```
 
 ## TODO
-- Support for nested schema on Get
 - Feature for set computed field
 - Other than struct, support for map also
