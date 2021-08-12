@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/tshihad/structs"
 )
 
 // Get accepts two argument. d contians ResourceData and v is the output struct
@@ -34,9 +35,6 @@ func recursiveGet(rv reflect.Value, d *schema.ResourceData, path string, schemaM
 		for i := 0; i < t.NumField(); i++ {
 			if value, ok := t.Field(i).Tag.Lookup("tf"); ok {
 				splitTags := strings.Split(value, ",")
-				if len(splitTags) < 1 {
-					panic("no proper tag value")
-				}
 				var newPath string
 				if path != "" {
 					newPath = path + "." + splitTags[0]
@@ -71,10 +69,77 @@ func recursiveGet(rv reflect.Value, d *schema.ResourceData, path string, schemaM
 			for k, v := range m {
 				// Set index and value directly here
 				rv.SetMapIndex(reflect.ValueOf(k), reflect.ValueOf(v))
-				// recursive(rv.MapIndex(reflect.ValueOf(k)), d, fmt.Sprintf("%s.%s", path, k), v)
 			}
 		}
 	default:
 		rv.Set(reflect.ValueOf(schemaMap))
 	}
+}
+
+func Set(d *schema.ResourceData, v interface{}) error {
+	rv := reflect.Indirect(reflect.ValueOf(v))
+	// currently only struct type is supported
+	if rv.Kind() != reflect.Struct {
+		return errors.New("only struct type is supported")
+	}
+	// var result interface{}
+	recursiveSet(rv, d, false)
+	return nil
+}
+
+func recursiveSet(rv reflect.Value, d *schema.ResourceData, computed bool) interface{} {
+	switch rv.Kind() {
+	case reflect.Struct:
+		t := rv.Type()
+		for i := 0; i < t.NumField(); i++ {
+			field := t.Field(i)
+			if value, ok := field.Tag.Lookup("tf"); ok {
+				splitTags := strings.Split(value, ",")
+				// Check computed tag
+				if len(splitTags) > 1 && splitTags[1] == "computed" {
+					// If the field is struct then check check computed. Computed will be true if this
+					// is a child struct of any other structs or slices
+					if rv.Field(i).Kind() == reflect.Struct {
+						if computed {
+							return structs.Map(rv.Field(i).Interface())
+						}
+						result := structs.Map(rv.Field(i).Interface())
+						d.Set(splitTags[0], result)
+
+						return nil
+					}
+					result := recursiveSet(rv.Field(i), d, true)
+					d.Set(splitTags[0], result)
+
+					return nil
+				}
+			}
+			// For non computed fields iterate all elements recursively
+			recursiveSet(rv.Field(i), d, false)
+		}
+
+	case reflect.Slice:
+		result := make([]interface{}, rv.Len())
+		// iterate through array and figure it out values. Value can be map, struct,
+		// slice or primitive data type
+		for i := 0; i < rv.Len(); i++ {
+			result[i] = recursiveSet(rv.Index(i), d, computed)
+		}
+
+		return result
+
+	case reflect.Map:
+		result := make(map[string]interface{})
+		iter := rv.MapRange()
+		for iter.Next() {
+			k := iter.Key()
+			v := iter.Value()
+			result[k.String()] = v.Interface()
+		}
+
+		return result
+	}
+
+	// Primitive data type
+	return rv.Interface()
 }
