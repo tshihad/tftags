@@ -1,4 +1,4 @@
-module github.com/tshihad/tf-tags
+module github.com/tshihad/tftags
 
 go 1.16
 
