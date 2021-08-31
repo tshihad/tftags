@@ -6,12 +6,11 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/tshihad/structs"
 )
 
 // Get accepts two argument. d contians ResourceData and v is the output struct
-func Get(d *schema.ResourceData, output interface{}) error {
+func Get(d resourceData, output interface{}) error {
 	rv := reflect.Indirect(reflect.ValueOf(output))
 	if !rv.CanSet() {
 		return errors.New("input is not settable")
@@ -27,7 +26,7 @@ func Get(d *schema.ResourceData, output interface{}) error {
 
 // recursively run over the schema and populate the ouput struct. SchemaMap maps all the
 // values in schema into an interface. path will the complete path to a value
-func recursiveGet(rv reflect.Value, d *schema.ResourceData, path string, schemaMap interface{}) {
+func recursiveGet(rv reflect.Value, d resourceData, path string, schemaMap interface{}) {
 	switch rv.Kind() {
 	case reflect.Struct:
 		// for type struct loop through all values and check tags 'tf'
@@ -76,7 +75,7 @@ func recursiveGet(rv reflect.Value, d *schema.ResourceData, path string, schemaM
 	}
 }
 
-func Set(d *schema.ResourceData, v interface{}) error {
+func Set(d resourceData, v interface{}) error {
 	rv := reflect.Indirect(reflect.ValueOf(v))
 	// currently only struct type is supported
 	if rv.Kind() != reflect.Struct {
@@ -87,7 +86,7 @@ func Set(d *schema.ResourceData, v interface{}) error {
 	return nil
 }
 
-func recursiveSet(rv reflect.Value, d *schema.ResourceData, computed bool) interface{} {
+func recursiveSet(rv reflect.Value, d resourceData, computed bool) interface{} {
 	switch rv.Kind() {
 	case reflect.Struct:
 		t := rv.Type()
