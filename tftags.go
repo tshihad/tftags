@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-
-	"github.com/tshihad/structs"
 )
 
 // Get accepts two argument. d contians ResourceData and v is the output struct
@@ -87,31 +85,27 @@ func recursiveSet(rv reflect.Value, d resourceData, computed bool) interface{} {
 	switch rv.Kind() {
 	case reflect.Struct:
 		t := rv.Type()
+		rMap := make(map[string]interface{})
 		for i := 0; i < t.NumField(); i++ {
 			field := t.Field(i)
 			if value, ok := field.Tag.Lookup("tf"); ok {
 				splitTags := strings.Split(value, ",")
-				// Check computed tag
-				if len(splitTags) > 1 && splitTags[1] == "computed" {
-					// If the field is struct then check check computed. Computed will be true if this
-					// is a child struct of any other structs or slices
-					if rv.Field(i).Kind() == reflect.Struct {
-						if computed {
-							return structs.Map(rv.Field(i).Interface())
-						}
-						result := structs.Map(rv.Field(i).Interface())
+				// if computed is true then it indicates it is a child struct
+				if computed {
+					rMap[splitTags[0]] = recursiveSet(rv.Field(i), d, true)
+				} else {
+					// Check computed tag
+					if len(splitTags) > 1 && splitTags[1] == "computed" {
+						result := recursiveSet(rv.Field(i), d, true)
 						d.Set(splitTags[0], result)
-
-						return nil
 					}
-					result := recursiveSet(rv.Field(i), d, true)
-					d.Set(splitTags[0], result)
 				}
-			} else {
-				// For non computed fields iterate all elements recursively
-				recursiveSet(rv.Field(i), d, false)
-			}
+			} // else {
+			// For non computed fields iterate all elements recursively
+			// 		recursiveSet(rv.Field(i), d, false)
+			// }
 		}
+		return rMap
 
 	case reflect.Slice:
 		result := make([]interface{}, rv.Len())

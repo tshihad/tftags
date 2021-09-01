@@ -29,8 +29,8 @@ func (r *rdTestImp) Set(key string, value interface{}) error {
 }
 
 type TT1 struct {
-	Name string `tf:"name,computed"`
-	Data int    `tf:"data,computed"`
+	Name string `tf:"name"`
+	Data int    `tf:"data"`
 }
 type TT2 struct {
 	M     map[string]int `tf:"m,computed"`
@@ -109,17 +109,17 @@ func TestSet(t *testing.T) {
 		wantErr bool
 		want    map[string]interface{}
 	}{
-		// {
-		// 	name: "Normal test case 1: Set linear struct",
-		// 	args: TT1{
-		// 		Name: "test1",
-		// 		Data: 54,
-		// 	},
-		// 	want: map[string]interface{}{
-		// 		"name": "test1",
-		// 		"data": 54,
-		// 	},
-		// },
+		{
+			name: "Normal test case 1: Set linear struct",
+			args: TT1{
+				Name: "test1",
+				Data: 54,
+			},
+			want: map[string]interface{}{
+				"name": "test1",
+				"data": 54,
+			},
+		},
 		{
 			name: "Normal test case 12: Set complex struct",
 			args: TT2{
@@ -133,14 +133,14 @@ func TestSet(t *testing.T) {
 				Array: []string{"test1", "test2"},
 			},
 			want: map[string]interface{}{
-				"m": map[string]int{
+				"m": map[string]interface{}{
 					"data": 2,
 				},
 				"t1": map[string]interface{}{
 					"name": "test 1 name",
 					"data": 123,
 				},
-				"array": []string{"test1", "test2"},
+				"array": []interface{}{"test1", "test2"},
 			},
 		},
 	}
@@ -153,7 +153,7 @@ func TestSet(t *testing.T) {
 				t.Errorf("Set() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if !reflect.DeepEqual(tt.want, d.vals) {
-				t.Errorf("want %v, but got %v", tt.want, d.vals)
+				t.Errorf("want %#v,\n but got %#v", tt.want, d.vals)
 			}
 		})
 	}
