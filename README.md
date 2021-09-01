@@ -20,6 +20,11 @@ Assume you had a resource as following
             Optional:    true,
             Default:     "Default",
         },
+        "calc": {
+            Type:        schema.TypeInt,
+            Computed:    true,
+            Default:     "Default",
+        }
     },
 }
 ```
@@ -38,6 +43,26 @@ You can parse above schema to following struct
     }
 ```
 
-## TODO
-- Feature for set computed field
-- Other than struct, support for map also
+Nested structs are supported for nested terraform resources.
+
+~ Please note that, you need to provide `tf` tags for every fields to parse, any fields without `tf` tags will be omitted
+
+You can use `Set` function to set computed fields of a resource. To denote computed field use `computed` in the tags.
+
+example:
+```
+    type Model struct {
+        Id         string `tf:"id"`
+        Site       string `tf:"site"`
+        Name       string `tf:"name"`
+        Calculated int `tf:"calc,computed"
+    }
+
+    err:= tftags.Set(d,Model{Calculated: 5})
+```
+
+~ You need to set computed on top level field of the struct, otherwise it won't work
+
+
+# License
+https://github.com/tshihad/tftags/blob/main/LICENSE
