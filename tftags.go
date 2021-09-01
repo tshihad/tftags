@@ -106,12 +106,11 @@ func recursiveSet(rv reflect.Value, d resourceData, computed bool) interface{} {
 					}
 					result := recursiveSet(rv.Field(i), d, true)
 					d.Set(splitTags[0], result)
-
-					return nil
 				}
+			} else {
+				// For non computed fields iterate all elements recursively
+				recursiveSet(rv.Field(i), d, false)
 			}
-			// For non computed fields iterate all elements recursively
-			recursiveSet(rv.Field(i), d, false)
 		}
 
 	case reflect.Slice:
