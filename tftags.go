@@ -61,14 +61,12 @@ func recursiveGet(rv reflect.Value, d resourceData, path string, schemaMap inter
 	case reflect.Map:
 		// if output is map and schemaMap also map then allocates new map
 		// to output
-		if m, ok := schemaMap.(map[string]interface{}); ok {
-			rvMap := reflect.MakeMap(rv.Type())
-			rv.Set(rvMap)
+		rvMap := reflect.ValueOf(schemaMap)
+		rv.Set(reflect.MakeMap(rv.Type()))
 
-			for k, v := range m {
-				// Set index and value directly here
-				rv.SetMapIndex(reflect.ValueOf(k), reflect.ValueOf(v))
-			}
+		for _, key := range rvMap.MapKeys() {
+			// Set index and value directly here
+			rv.SetMapIndex(key, rvMap.MapIndex(key))
 		}
 	default:
 		rv.Set(reflect.ValueOf(schemaMap))
