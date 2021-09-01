@@ -50,13 +50,12 @@ func recursiveGet(rv reflect.Value, d resourceData, path string, schemaMap inter
 	case reflect.Slice:
 		// if the output contains field slice, check correspoding schemaMap is also
 		// a slice, if so allocate new slice to the rv
-		if array, ok := schemaMap.([]interface{}); ok {
-			slice := reflect.MakeSlice(rv.Type(), len(array), cap(array))
-			rv.Set(slice)
-			for i := 0; i < rv.Len(); i++ {
-				// recursively set each elements in slice
-				recursiveGet(rv.Index(i), d, fmt.Sprintf("%s.%d", path, i), array[i])
-			}
+		sArray := reflect.ValueOf(schemaMap)
+		slice := reflect.MakeSlice(rv.Type(), sArray.Len(), sArray.Cap())
+		rv.Set(slice)
+		for i := 0; i < rv.Len(); i++ {
+			// recursively set each elements in slice
+			recursiveGet(rv.Index(i), d, fmt.Sprintf("%s.%d", path, i), sArray.Index(i).Interface())
 		}
 	case reflect.Map:
 		// if output is map and schemaMap also map then allocates new map

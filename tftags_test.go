@@ -34,8 +34,9 @@ func TestGet(t *testing.T) {
 		Data int    `tf:"data"`
 	}
 	type TT2 struct {
-		M  map[string]int `tf:"m"`
-		T1 TT1            `tf:"t1"`
+		M     map[string]int `tf:"m"`
+		T1    TT1            `tf:"t1"`
+		Array []string       `tf:"array"`
 	}
 	tests := []struct {
 		name    string
@@ -70,6 +71,7 @@ func TestGet(t *testing.T) {
 						"name": "test 1 name",
 						"data": 123,
 					},
+					"array": []string{"test1", "test2"},
 				}
 			},
 			want: &TT2{
@@ -80,6 +82,7 @@ func TestGet(t *testing.T) {
 					Name: "test 1 name",
 					Data: 123,
 				},
+				Array: []string{"test1", "test2"},
 			},
 		},
 	}
