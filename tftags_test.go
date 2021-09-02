@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 type rdTestImp struct {
@@ -16,12 +18,13 @@ func (r *rdTestImp) GetOk(key string) (interface{}, bool) {
 	paths := strings.Split(key, ".")
 	val, ok := r.vals[paths[0]]
 	for i := 1; i < len(paths); i++ {
-		if paths[i] == "0" {
-			var v []interface{}
-			v, ok = val.([]interface{})
-			val = v[0]
-		} else {
-			val, ok = val.(map[string]interface{})[paths[i]]
+		switch v := val.(type) {
+		case map[string]interface{}:
+			val, ok = v[paths[i]]
+		case []interface{}:
+			val = v[i]
+		case *schema.Set:
+			val = v.List()[0]
 		}
 	}
 	return val, ok
@@ -99,19 +102,26 @@ func TestGet(t *testing.T) {
 			name: "Normal test case 3: Get values having sub",
 			args: &TT3{},
 			given: func(r *rdTestImp) {
-				r.vals = map[string]interface{}{
-					"t2": []interface{}{
-						map[string]interface{}{
-							"m": map[string]int{
-								"data": 2,
-							},
-							"t1": map[string]interface{}{
-								"name": "test 1 name",
-								"data": 123,
-							},
-							"array": []interface{}{"test1", "test2"},
+				set := schema.NewSet(func(data interface{}) int {
+					m := data.(map[string]interface{})
+					for k := range m {
+						return len(k)
+					}
+					return 0
+				}, []interface{}{
+					map[string]interface{}{
+						"m": map[string]int{
+							"data": 2,
 						},
+						"t1": map[string]interface{}{
+							"name": "test 1 name",
+							"data": 123,
+						},
+						"array": []interface{}{"test1", "test2"},
 					},
+				})
+				r.vals = map[string]interface{}{
+					"t2": set,
 				}
 			},
 			want: &TT3{
