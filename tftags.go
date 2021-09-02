@@ -90,11 +90,11 @@ func Set(d resourceData, v interface{}) error {
 		return errors.New("only struct type is supported")
 	}
 	// var result interface{}
-	recursiveSet(rv, d, false, false)
+	recursiveSet(rv, d, false)
 	return nil
 }
 
-func recursiveSet(rv reflect.Value, d resourceData, computed, isSub bool) interface{} {
+func recursiveSet(rv reflect.Value, d resourceData, computed bool) interface{} {
 	switch rv.Kind() {
 	case reflect.Struct:
 		t := rv.Type()
@@ -104,24 +104,24 @@ func recursiveSet(rv reflect.Value, d resourceData, computed, isSub bool) interf
 			if value, ok := field.Tag.Lookup("tf"); ok {
 				splitTags := strings.Split(value, ",")
 
-				isSub = searchTags(splitTags, subTag)
+				isSub := searchTags(splitTags, subTag)
 				// if computed is true then it indicates it is a child struct
 				if computed {
 					// isSub will denotes this is a sub element where schema contains array with one element
 					// but input data structure having struct
 					if isSub {
-						rMap[splitTags[0]] = []interface{}{recursiveSet(rv.Field(i), d, true, isSub)}
+						rMap[splitTags[0]] = []interface{}{recursiveSet(rv.Field(i), d, true)}
 					} else {
-						rMap[splitTags[0]] = recursiveSet(rv.Field(i), d, true, isSub)
+						rMap[splitTags[0]] = recursiveSet(rv.Field(i), d, true)
 					}
 
 				} else if searchTags(splitTags, computedTag) { // Check computed tags
 					var result interface{}
 					// if isSub allocates as array
 					if isSub {
-						result = []interface{}{recursiveSet(rv.Field(i), d, true, isSub)}
+						result = []interface{}{recursiveSet(rv.Field(i), d, true)}
 					} else {
-						result = recursiveSet(rv.Field(i), d, true, isSub)
+						result = recursiveSet(rv.Field(i), d, true)
 					}
 					d.Set(splitTags[0], result)
 				}
@@ -137,7 +137,7 @@ func recursiveSet(rv reflect.Value, d resourceData, computed, isSub bool) interf
 		// iterate through array and figure it out values. Value can be map, struct,
 		// slice or primitive data type
 		for i := 0; i < rv.Len(); i++ {
-			result[i] = recursiveSet(rv.Index(i), d, computed, false)
+			result[i] = recursiveSet(rv.Index(i), d, computed)
 		}
 
 		return result
