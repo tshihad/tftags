@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 const (
@@ -40,8 +42,10 @@ func recursiveGet(rv reflect.Value, d resourceData, path string, schemaMap inter
 				var newPath string
 				if path != "" {
 					newPath = path + "." + splitTags[0]
+					// if sub then it is *Set, find the hash value and include in path
 					if isSub {
-						newPath = path + ".0." + splitTags[0]
+						setData := schemaMap.(*schema.Set)
+						newPath = fmt.Sprintf("%s.%d.%s", path, setData.F(setData.List()[0]), splitTags[0])
 					}
 				} else {
 					newPath = splitTags[0]
@@ -54,12 +58,22 @@ func recursiveGet(rv reflect.Value, d resourceData, path string, schemaMap inter
 			}
 		}
 	case reflect.Slice:
-		// if the output contains field slice, check correspoding schemaMap is also
-		// a slice, if so allocate new slice to the rv
-		sArray := reflect.ValueOf(schemaMap)
+		var sArray reflect.Value
+		// if the output contains field slice, check is it is a set or list
+		schemaSet, isSet := schemaMap.(*schema.Set)
+		if isSet {
+			sArray = reflect.ValueOf(schemaSet.List())
+		} else {
+			sArray = reflect.ValueOf(schemaMap)
+		}
 		slice := reflect.MakeSlice(rv.Type(), sArray.Len(), sArray.Cap())
 		rv.Set(slice)
 		for i := 0; i < rv.Len(); i++ {
+			// set path
+			path = fmt.Sprintf("%s.%d", path, i)
+			if isSet {
+				path = fmt.Sprintf("%s.%d", path, schemaSet.F(schemaSet.List()[i]))
+			}
 			// recursively set each elements in slice
 			recursiveGet(
 				rv.Index(i),
