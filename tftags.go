@@ -7,6 +7,11 @@ import (
 	"strings"
 )
 
+const (
+	computedTag = "computed"
+	subTag      = "sub"
+)
+
 // Get accepts two argument. d contians ResourceData and v is the output struct
 func Get(d resourceData, output interface{}) error {
 	rv := reflect.Indirect(reflect.ValueOf(output))
@@ -77,11 +82,11 @@ func Set(d resourceData, v interface{}) error {
 		return errors.New("only struct type is supported")
 	}
 	// var result interface{}
-	recursiveSet(rv, d, false)
+	recursiveSet(rv, d, false, false)
 	return nil
 }
 
-func recursiveSet(rv reflect.Value, d resourceData, computed bool) interface{} {
+func recursiveSet(rv reflect.Value, d resourceData, computed, isSub bool) interface{} {
 	switch rv.Kind() {
 	case reflect.Struct:
 		t := rv.Type()
@@ -90,15 +95,27 @@ func recursiveSet(rv reflect.Value, d resourceData, computed bool) interface{} {
 			field := t.Field(i)
 			if value, ok := field.Tag.Lookup("tf"); ok {
 				splitTags := strings.Split(value, ",")
+
+				isSub = searchTags(splitTags, subTag)
 				// if computed is true then it indicates it is a child struct
 				if computed {
-					rMap[splitTags[0]] = recursiveSet(rv.Field(i), d, true)
-				} else {
-					// Check computed tag
-					if len(splitTags) > 1 && splitTags[1] == "computed" {
-						result := recursiveSet(rv.Field(i), d, true)
-						d.Set(splitTags[0], result)
+					// isSub will denotes this is a sub element where schema contains array with one element
+					// but input data structure having struct
+					if isSub {
+						rMap[splitTags[0]] = []interface{}{recursiveSet(rv.Field(i), d, true, isSub)}
+					} else {
+						rMap[splitTags[0]] = recursiveSet(rv.Field(i), d, true, isSub)
 					}
+
+				} else if searchTags(splitTags, computedTag) { // Check computed tags
+					var result interface{}
+					// if isSub allocates as array
+					if isSub {
+						result = []interface{}{recursiveSet(rv.Field(i), d, true, isSub)}
+					} else {
+						result = recursiveSet(rv.Field(i), d, true, isSub)
+					}
+					d.Set(splitTags[0], result)
 				}
 			} // else {
 			// For non computed fields iterate all elements recursively
@@ -112,7 +129,7 @@ func recursiveSet(rv reflect.Value, d resourceData, computed bool) interface{} {
 		// iterate through array and figure it out values. Value can be map, struct,
 		// slice or primitive data type
 		for i := 0; i < rv.Len(); i++ {
-			result[i] = recursiveSet(rv.Index(i), d, computed)
+			result[i] = recursiveSet(rv.Index(i), d, computed, false)
 		}
 
 		return result
@@ -131,4 +148,13 @@ func recursiveSet(rv reflect.Value, d resourceData, computed bool) interface{} {
 
 	// Primitive data type
 	return rv.Interface()
+}
+
+func searchTags(slice []string, item string) bool {
+	for i := 1; i < len(slice); i++ {
+		if slice[i] == item {
+			return true
+		}
+	}
+	return false
 }

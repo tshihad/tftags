@@ -29,13 +29,16 @@ func (r *rdTestImp) Set(key string, value interface{}) error {
 }
 
 type TT1 struct {
-	Name string `tf:"name"`
-	Data int    `tf:"data"`
+	Name string `tf:"name,computed"`
+	Data int    `tf:"data,computed"`
 }
 type TT2 struct {
 	M     map[string]int `tf:"m,computed"`
 	T1    TT1            `tf:"t1,computed"`
 	Array []string       `tf:"array,computed"`
+}
+type TT3 struct {
+	T2 TT2 `tf:"t2,computed,sub"`
 }
 
 func TestGet(t *testing.T) {
@@ -121,7 +124,7 @@ func TestSet(t *testing.T) {
 			},
 		},
 		{
-			name: "Normal test case 12: Set complex struct",
+			name: "Normal test case 2: Set complex struct",
 			args: TT2{
 				M: map[string]int{
 					"data": 2,
@@ -141,6 +144,34 @@ func TestSet(t *testing.T) {
 					"data": 123,
 				},
 				"array": []interface{}{"test1", "test2"},
+			},
+		},
+		{
+			name: "Normal test case 3: struct with sub item",
+			args: TT3{
+				T2: TT2{
+					M: map[string]int{
+						"data": 2,
+					},
+					T1: TT1{
+						Name: "test 1 name",
+						Data: 123,
+					},
+					Array: []string{"test1", "test2"},
+				}},
+			want: map[string]interface{}{
+				"t2": []interface{}{
+					map[string]interface{}{
+						"m": map[string]interface{}{
+							"data": 2,
+						},
+						"t1": map[string]interface{}{
+							"name": "test 1 name",
+							"data": 123,
+						},
+						"array": []interface{}{"test1", "test2"},
+					},
+				},
 			},
 		},
 	}
