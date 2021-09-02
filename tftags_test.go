@@ -16,7 +16,13 @@ func (r *rdTestImp) GetOk(key string) (interface{}, bool) {
 	paths := strings.Split(key, ".")
 	val, ok := r.vals[paths[0]]
 	for i := 1; i < len(paths); i++ {
-		val, ok = val.(map[string]interface{})[paths[i]]
+		if paths[i] == "0" {
+			var v []interface{}
+			v, ok = val.([]interface{})
+			val = v[0]
+		} else {
+			val, ok = val.(map[string]interface{})[paths[i]]
+		}
 	}
 	return val, ok
 }
@@ -87,6 +93,38 @@ func TestGet(t *testing.T) {
 					Data: 123,
 				},
 				Array: []string{"test1", "test2"},
+			},
+		},
+		{
+			name: "Normal test case 3: Get values having sub",
+			args: &TT3{},
+			given: func(r *rdTestImp) {
+				r.vals = map[string]interface{}{
+					"t2": []interface{}{
+						map[string]interface{}{
+							"m": map[string]int{
+								"data": 2,
+							},
+							"t1": map[string]interface{}{
+								"name": "test 1 name",
+								"data": 123,
+							},
+							"array": []interface{}{"test1", "test2"},
+						},
+					},
+				}
+			},
+			want: &TT3{
+				T2: TT2{
+					M: map[string]int{
+						"data": 2,
+					},
+					T1: TT1{
+						Name: "test 1 name",
+						Data: 123,
+					},
+					Array: []string{"test1", "test2"},
+				},
 			},
 		},
 	}

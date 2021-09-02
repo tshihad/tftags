@@ -23,13 +23,13 @@ func Get(d resourceData, output interface{}) error {
 		return errors.New("only struct type is supported")
 	}
 
-	recursiveGet(rv, d, "", nil)
+	recursiveGet(rv, d, "", nil, false)
 	return nil
 }
 
 // recursively run over the schema and populate the ouput struct. SchemaMap maps all the
 // values in schema into an interface. path will the complete path to a value
-func recursiveGet(rv reflect.Value, d resourceData, path string, schemaMap interface{}) {
+func recursiveGet(rv reflect.Value, d resourceData, path string, schemaMap interface{}, isSub bool) {
 	switch rv.Kind() {
 	case reflect.Struct:
 		// for type struct loop through all values and check tags 'tf'
@@ -40,13 +40,16 @@ func recursiveGet(rv reflect.Value, d resourceData, path string, schemaMap inter
 				var newPath string
 				if path != "" {
 					newPath = path + "." + splitTags[0]
+					if isSub {
+						newPath = path + ".0." + splitTags[0]
+					}
 				} else {
 					newPath = splitTags[0]
 				}
 				// Get corresponding data from schema
 				if val, ok := d.GetOk(newPath); ok {
 					// iterate to the corresponding field and call recursiveGet again
-					recursiveGet(rv.Field(i), d, newPath, val)
+					recursiveGet(rv.Field(i), d, newPath, val, searchTags(splitTags, subTag))
 				}
 			}
 		}
@@ -58,7 +61,12 @@ func recursiveGet(rv reflect.Value, d resourceData, path string, schemaMap inter
 		rv.Set(slice)
 		for i := 0; i < rv.Len(); i++ {
 			// recursively set each elements in slice
-			recursiveGet(rv.Index(i), d, fmt.Sprintf("%s.%d", path, i), sArray.Index(i).Interface())
+			recursiveGet(
+				rv.Index(i),
+				d,
+				fmt.Sprintf("%s.%d", path, i),
+				sArray.Index(i).Interface(),
+				false)
 		}
 	case reflect.Map:
 		// if output is map and schemaMap also map then allocates new map
