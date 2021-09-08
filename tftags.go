@@ -68,17 +68,20 @@ func recursiveGet(rv reflect.Value, d resourceData, path string, schemaMap inter
 		}
 		slice := reflect.MakeSlice(rv.Type(), sArray.Len(), sArray.Cap())
 		rv.Set(slice)
+
 		for i := 0; i < rv.Len(); i++ {
 			// set path
-			path = fmt.Sprintf("%s.%d", path, i)
+			var newPath string
 			if isSet {
-				path = fmt.Sprintf("%s.%d", path, schemaSet.F(schemaSet.List()[i]))
+				newPath = fmt.Sprintf("%s.%d", path, schemaSet.F(schemaSet.List()[i]))
+			} else {
+				newPath = fmt.Sprintf("%s.%d", path, i)
 			}
 			// recursively set each elements in slice
 			recursiveGet(
 				rv.Index(i),
 				d,
-				fmt.Sprintf("%s.%d", path, i),
+				newPath,
 				sArray.Index(i).Interface(),
 				false)
 		}
@@ -111,6 +114,9 @@ func Set(d resourceData, v interface{}) error {
 func recursiveSet(rv reflect.Value, d resourceData, computed bool) interface{} {
 	switch rv.Kind() {
 	case reflect.Struct:
+		if rv.IsZero() {
+			return nil
+		}
 		t := rv.Type()
 		rMap := make(map[string]interface{})
 		for i := 0; i < t.NumField(); i++ {
@@ -121,23 +127,13 @@ func recursiveSet(rv reflect.Value, d resourceData, computed bool) interface{} {
 				isSub := searchTags(splitTags, subTag)
 				// if computed is true then it indicates it is a child struct
 				if computed {
-					// isSub will denotes this is a sub element where schema contains array with one element
-					// but input data structure having struct
-					if isSub {
-						rMap[splitTags[0]] = []interface{}{recursiveSet(rv.Field(i), d, true)}
-					} else {
-						rMap[splitTags[0]] = recursiveSet(rv.Field(i), d, true)
-					}
+					rMap[splitTags[0]] = checkSub(rv, i, d, isSub)
 
 				} else if searchTags(splitTags, computedTag) { // Check computed tags
-					var result interface{}
-					// if isSub allocates as array
-					if isSub {
-						result = []interface{}{recursiveSet(rv.Field(i), d, true)}
-					} else {
-						result = recursiveSet(rv.Field(i), d, true)
+					result := checkSub(rv, i, d, isSub)
+					if !isEmpty(result) {
+						d.Set(splitTags[0], result)
 					}
-					d.Set(splitTags[0], result)
 				}
 			} // else {
 			// For non computed fields iterate all elements recursively
@@ -172,6 +168,26 @@ func recursiveSet(rv reflect.Value, d resourceData, computed bool) interface{} {
 	return rv.Interface()
 }
 
+// checkSub check whether this is a sub element and recusively
+// allocates output struct regarding it
+func checkSub(rv reflect.Value, i int, d resourceData, isSub bool) interface{} {
+	var result interface{}
+	// if isSub allocates as array
+	// isSub will denotes this is a sub element where schema contains array with one element
+	// but input data structure having struct
+	if isSub {
+		r := recursiveSet(rv.Field(i), d, true)
+		if isEmpty(r) {
+			return nil
+		}
+		result = []interface{}{r}
+	} else {
+		result = recursiveSet(rv.Field(i), d, true)
+	}
+	return result
+}
+
+// searchTags search items in tags
 func searchTags(slice []string, item string) bool {
 	for i := 1; i < len(slice); i++ {
 		if slice[i] == item {
@@ -179,4 +195,9 @@ func searchTags(slice []string, item string) bool {
 		}
 	}
 	return false
+}
+
+// isEmpty checks given iterface is empty or not
+func isEmpty(n interface{}) bool {
+	return n == nil || reflect.ValueOf(n).IsZero()
 }

@@ -2,7 +2,9 @@ package tftags
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -17,14 +19,23 @@ type rdTestImp struct {
 func (r *rdTestImp) GetOk(key string) (interface{}, bool) {
 	paths := strings.Split(key, ".")
 	val, ok := r.vals[paths[0]]
+	setIter := 0
+
 	for i := 1; i < len(paths); i++ {
 		switch v := val.(type) {
 		case map[string]interface{}:
 			val, ok = v[paths[i]]
 		case []interface{}:
-			val = v[i]
+			index, err := strconv.Atoi(paths[i])
+			if err != nil {
+				panic(err)
+			}
+			val = v[index]
 		case *schema.Set:
-			val = v.List()[0]
+			val = v.List()[setIter]
+			setIter++
+		default:
+			panic(fmt.Sprintf("unknown type %v", v))
 		}
 	}
 	return val, ok
@@ -48,6 +59,10 @@ type TT2 struct {
 }
 type TT3 struct {
 	T2 TT2 `tf:"t2,computed,sub"`
+}
+
+type TT4 struct {
+	Array []TT1 `tf:"array,computed"`
 }
 
 func TestGet(t *testing.T) {
@@ -134,6 +149,36 @@ func TestGet(t *testing.T) {
 						Data: 123,
 					},
 					Array: []string{"test1", "test2"},
+				},
+			},
+		},
+		{
+			name: "Test case 4: Array of struct",
+			args: &TT4{},
+			given: func(r *rdTestImp) {
+				r.vals = map[string]interface{}{
+					"array": []interface{}{
+						map[string]interface{}{
+							"name": "test1",
+							"data": 12,
+						},
+						map[string]interface{}{
+							"name": "test2",
+							"data": 13,
+						},
+					},
+				}
+			},
+			want: &TT4{
+				Array: []TT1{
+					{
+						Name: "test1",
+						Data: 12,
+					},
+					{
+						Name: "test2",
+						Data: 13,
+					},
 				},
 			},
 		},
