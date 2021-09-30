@@ -95,6 +95,10 @@ func recursiveGet(rv reflect.Value, d resourceData, path string, schemaMap inter
 			// Set index and value directly here
 			rv.SetMapIndex(key, rvMap.MapIndex(key))
 		}
+	case reflect.Ptr:
+		ptrType := reflect.New(rv.Type().Elem())
+		rv.Set(ptrType)
+		recursiveGet(rv.Elem(), d, path, schemaMap, isSub)
 	default:
 		rv.Set(reflect.ValueOf(schemaMap))
 	}

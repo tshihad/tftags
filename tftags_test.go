@@ -33,7 +33,7 @@ func (r *rdTestImp) GetOk(key string) (interface{}, bool) {
 			val = v[index]
 		case *schema.Set:
 			val = v.List()[setIter]
-			setIter++
+			// setIter++
 		default:
 			panic(fmt.Sprintf("unknown type %v", v))
 		}
@@ -48,6 +48,9 @@ func (r *rdTestImp) Set(key string, value interface{}) error {
 	return nil
 }
 
+type TT0 struct {
+	T1 *TT1 `tf:"t1"`
+}
 type TT1 struct {
 	Name string `tf:"name,computed"`
 	Data int    `tf:"data,computed"`
@@ -73,6 +76,24 @@ func TestGet(t *testing.T) {
 		want    interface{}
 		wantErr bool
 	}{
+		{
+			name: "Normal test case 0: Get values with pointer",
+			args: &TT0{},
+			given: func(r *rdTestImp) {
+				r.vals = map[string]interface{}{
+					"t1": map[string]interface{}{
+						"name": "test 1 name",
+						"data": 123,
+					},
+				}
+			},
+			want: &TT0{
+				T1: &TT1{
+					Name: "test 1 name",
+					Data: 123,
+				},
+			},
+		},
 		{
 			name: "Normal test case 1: Get values for a linear struct",
 			args: &TT1{},
