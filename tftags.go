@@ -122,29 +122,35 @@ func recursiveSet(rv reflect.Value, d resourceData, computed bool) interface{} {
 			return nil
 		}
 		t := rv.Type()
-		rMap := make(map[string]interface{})
+
+		// subMap holds the result of sub element
+		subMap := make(map[string]interface{})
 		for i := 0; i < t.NumField(); i++ {
 			field := t.Field(i)
 			if value, ok := field.Tag.Lookup("tf"); ok {
 				splitTags := strings.Split(value, ",")
 
+				// Check is this is a sub element
 				isSub := searchTags(splitTags, subTag)
 				// if computed is true then it indicates it is a child struct
 				if computed {
-					rMap[splitTags[0]] = checkSub(rv, i, d, isSub)
+					// If this is child struct we don't need to call d.Set(). Set() function
+					// will only called for a top level element. For the child element assign
+					// to a map
+					subMap[splitTags[0]] = checkSub(rv, i, d, isSub)
 
 				} else if searchTags(splitTags, computedTag) { // Check computed tags
+					// checkSub will call recursiveSet for the entire data structure and return
+					// result. This result will be toplevel value, hence can be Set
 					result := checkSub(rv, i, d, isSub)
+					// since this is a top level element set the element
 					if !isEmpty(result) {
 						d.Set(splitTags[0], result)
 					}
 				}
-			} // else {
-			// For non computed fields iterate all elements recursively
-			// 		recursiveSet(rv.Field(i), d, false)
-			// }
+			}
 		}
-		return rMap
+		return subMap
 
 	case reflect.Slice:
 		result := make([]interface{}, rv.Len())
@@ -166,6 +172,9 @@ func recursiveSet(rv reflect.Value, d resourceData, computed bool) interface{} {
 		}
 
 		return result
+	case reflect.Ptr:
+		// if a pointer, recursive set value of rv
+		return recursiveSet(reflect.Indirect(rv), d, computed)
 	}
 
 	// Primitive data type

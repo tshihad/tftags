@@ -49,7 +49,7 @@ func (r *rdTestImp) Set(key string, value interface{}) error {
 }
 
 type TT0 struct {
-	T1 *TT1 `tf:"t1"`
+	T1 *TT1 `tf:"t1,computed"`
 }
 type TT1 struct {
 	Name string `tf:"name,computed"`
@@ -226,6 +226,21 @@ func TestSet(t *testing.T) {
 		wantErr bool
 		want    map[string]interface{}
 	}{
+		{
+			name: "Normal test case 0: Get values with pointer",
+			args: &TT0{
+				T1: &TT1{
+					Name: "test 1 name",
+					Data: 123,
+				},
+			},
+			want: map[string]interface{}{
+				"t1": map[string]interface{}{
+					"name": "test 1 name",
+					"data": 123,
+				},
+			},
+		},
 		{
 			name: "Normal test case 1: Set linear struct",
 			args: TT1{
