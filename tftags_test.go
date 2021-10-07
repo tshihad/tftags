@@ -40,6 +40,7 @@ func (r *rdTestImp) GetOk(key string) (interface{}, bool) {
 	}
 	return val, ok
 }
+
 func (r *rdTestImp) Set(key string, value interface{}) error {
 	if r.setErr {
 		return errors.New("error")
@@ -48,24 +49,36 @@ func (r *rdTestImp) Set(key string, value interface{}) error {
 	return nil
 }
 
+func (r *rdTestImp) GetId() string {
+	return "1"
+}
+
+func (r *rdTestImp) SetId(v string) {
+	r.vals["id"] = v
+}
+
 type TT0 struct {
 	T1 *TT1 `tf:"t1,computed"`
 }
+
 type TT1 struct {
 	Name string `tf:"name,computed"`
 	Data int    `tf:"data,computed"`
 }
+
 type TT2 struct {
 	M     map[string]int `tf:"m,computed"`
 	T1    TT1            `tf:"t1,computed"`
 	Array []string       `tf:"array,computed"`
 }
+
 type TT3 struct {
 	T2 TT2 `tf:"t2,computed,sub"`
 }
 
 type TT4 struct {
-	Array []TT1 `tf:"array,computed"`
+	ID    string `tf:"id,computed"`
+	Array []TT1  `tf:"array,computed"`
 }
 
 func TestGet(t *testing.T) {
@@ -191,6 +204,7 @@ func TestGet(t *testing.T) {
 				}
 			},
 			want: &TT4{
+				ID: "1",
 				Array: []TT1{
 					{
 						Name: "test1",
@@ -287,7 +301,8 @@ func TestSet(t *testing.T) {
 						Data: 123,
 					},
 					Array: []string{"test1", "test2"},
-				}},
+				},
+			},
 			want: map[string]interface{}{
 				"t2": []interface{}{
 					map[string]interface{}{
@@ -301,6 +316,15 @@ func TestSet(t *testing.T) {
 						"array": []interface{}{"test1", "test2"},
 					},
 				},
+			},
+		},
+		{
+			name: "Normal test case 4: Set ID",
+			args: TT4{
+				ID: "12",
+			},
+			want: map[string]interface{}{
+				"id": "12",
 			},
 		},
 	}

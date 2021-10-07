@@ -54,6 +54,8 @@ func recursiveGet(rv reflect.Value, d resourceData, path string, schemaMap inter
 				if val, ok := d.GetOk(newPath); ok {
 					// iterate to the corresponding field and call recursiveGet again
 					recursiveGet(rv.Field(i), d, newPath, val, searchTags(splitTags, subTag))
+				} else if newPath == "id" {
+					recursiveGet(rv.Field(i), d, newPath, d.GetId(), searchTags(splitTags, subTag))
 				}
 			}
 		}
@@ -138,14 +140,17 @@ func recursiveSet(rv reflect.Value, d resourceData, computed bool) interface{} {
 					// will only called for a top level element. For the child element assign
 					// to a map
 					subMap[splitTags[0]] = checkSub(rv, i, d, isSub)
-
 				} else if searchTags(splitTags, computedTag) { // Check computed tags
 					// checkSub will call recursiveSet for the entire data structure and return
 					// result. This result will be toplevel value, hence can be Set
 					result := checkSub(rv, i, d, isSub)
 					// since this is a top level element set the element
 					if !isEmpty(result) {
-						d.Set(splitTags[0], result)
+						if splitTags[0] == "id" {
+							d.SetId(result.(string))
+						} else {
+							d.Set(splitTags[0], result)
+						}
 					}
 				}
 			}
@@ -153,6 +158,9 @@ func recursiveSet(rv reflect.Value, d resourceData, computed bool) interface{} {
 		return subMap
 
 	case reflect.Slice:
+		if rv.Len() == 0 {
+			return nil
+		}
 		result := make([]interface{}, rv.Len())
 		// iterate through array and figure it out values. Value can be map, struct,
 		// slice or primitive data type
@@ -163,6 +171,9 @@ func recursiveSet(rv reflect.Value, d resourceData, computed bool) interface{} {
 		return result
 
 	case reflect.Map:
+		if rv.Len() == 0 {
+			return nil
+		}
 		result := make(map[string]interface{})
 		iter := rv.MapRange()
 		for iter.Next() {
