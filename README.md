@@ -82,7 +82,9 @@ Here we created struct for parsing. Please note you can include other tags such 
 
 	// This is the top level struct. All the computed fields should mark here
 	type Student struct {
-		ID    string `tf:"id"`
+        // id to denotes the resource or datasource. This should be computed as
+        // well as string type
+		ID    string `tf:"id,computed"`
 		Class string `tf:"class,computed"`
 		// since subject.#.id is computed the top level field should mark as computed
 		Subject []Subject `tf:"name,computed"`
@@ -100,6 +102,7 @@ Here we created struct for parsing. Please note you can include other tags such 
 
 ```
 
+ID in the struct will considered as the ID of the resource/data-source and `GetId` will be called if top level `id` tag is found.
 Nested structs are supported for nested terraform resources.
 
 _**Note:** Please note that, you need to provide `tf` tags for every fields to parse, any fields without `tf` tags will be omitted_
@@ -112,6 +115,8 @@ example:
         return err
     }
 ```
+Top level `tf:"id"` with `computed` tag will consider as id of the resource and tftags will call `SetId()` function for the same. This will panics
+if the ID type is not `string`
 
 _**Note:** You need to set computed on top level field of the struct, otherwise it won't work_
 
@@ -128,12 +133,13 @@ If you have request json like following
 and struct model looks like
 ```go
     type IDModel struct{
-        ID int `json:"id" tf:"id"`
+        ID int `json:"id" tf:"id,computed"`
     }
 
     type Model struct{
+        ID string `json:"id" tf:"id,computed"`
         Name string  `json:"name" tf:"name"`
-        Data IDModel `json:"data" tf:"data,sub"`
+        Data IDModel `json:"data" tf:"data,sub,computed"`
     }
 ```
 Since terraform doesn't support child object like json do.So using sub will helps to mock child struct. For using
