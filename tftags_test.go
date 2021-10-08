@@ -49,7 +49,7 @@ func (r *rdTestImp) Set(key string, value interface{}) error {
 	return nil
 }
 
-func (r *rdTestImp) GetId() string {
+func (r *rdTestImp) Id() string {
 	return "1"
 }
 

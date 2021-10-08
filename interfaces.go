@@ -5,6 +5,6 @@ type resourceData interface {
 	// Get(key string) interface{}
 	GetOk(key string) (interface{}, bool)
 	Set(key string, value interface{}) error
-	GetId() string
+	Id() string
 	SetId(v string)
 }

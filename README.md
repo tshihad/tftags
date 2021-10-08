@@ -102,7 +102,7 @@ Here we created struct for parsing. Please note you can include other tags such 
 
 ```
 
-ID in the struct will considered as the ID of the resource/data-source and `GetId` will be called if top level `id` tag is found.
+ID in the struct will considered as the ID of the resource/data-source and `Id()` will be called if top level `id` tag is found.
 Nested structs are supported for nested terraform resources.
 
 _**Note:** Please note that, you need to provide `tf` tags for every fields to parse, any fields without `tf` tags will be omitted_

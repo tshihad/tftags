@@ -55,7 +55,7 @@ func recursiveGet(rv reflect.Value, d resourceData, path string, schemaMap inter
 					// iterate to the corresponding field and call recursiveGet again
 					recursiveGet(rv.Field(i), d, newPath, val, searchTags(splitTags, subTag))
 				} else if newPath == "id" {
-					recursiveGet(rv.Field(i), d, newPath, d.GetId(), searchTags(splitTags, subTag))
+					recursiveGet(rv.Field(i), d, newPath, d.Id(), searchTags(splitTags, subTag))
 				}
 			}
 		}
