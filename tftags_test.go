@@ -77,8 +77,8 @@ type TT3 struct {
 }
 
 type TT4 struct {
-	ID    string `tf:"id,computed"`
-	Array []TT1  `tf:"array,computed"`
+	ID    int   `tf:"id,computed"`
+	Array []TT1 `tf:"array,computed"`
 }
 
 func TestGet(t *testing.T) {
@@ -204,7 +204,7 @@ func TestGet(t *testing.T) {
 				}
 			},
 			want: &TT4{
-				ID: "1",
+				ID: 1,
 				Array: []TT1{
 					{
 						Name: "test1",
@@ -321,7 +321,7 @@ func TestSet(t *testing.T) {
 		{
 			name: "Normal test case 4: Set ID",
 			args: TT4{
-				ID: "12",
+				ID: 12,
 			},
 			want: map[string]interface{}{
 				"id": "12",

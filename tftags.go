@@ -102,7 +102,7 @@ func recursiveGet(rv reflect.Value, d resourceData, path string, schemaMap inter
 		rv.Set(ptrType)
 		recursiveGet(rv.Elem(), d, path, schemaMap, isSub)
 	default:
-		rv.Set(reflect.ValueOf(schemaMap))
+		compareAndSet(rv, schemaMap)
 	}
 }
 
@@ -147,7 +147,7 @@ func recursiveSet(rv reflect.Value, d resourceData, computed bool) interface{} {
 					// since this is a top level element set the element
 					if !isEmpty(result) {
 						if splitTags[0] == "id" {
-							d.SetId(result.(string))
+							d.SetId(toString(result))
 						} else {
 							d.Set(splitTags[0], result)
 						}
