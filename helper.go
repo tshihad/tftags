@@ -19,9 +19,13 @@ func compareAndSet(dest reflect.Value, src interface{}) {
 	if srcRef.Kind() != dest.Kind() {
 		switch dest.Kind() {
 		case reflect.Int:
-			intVal, err := strconv.Atoi(toString(src))
+			strSrc := toString(src)
+			if strSrc == "" {
+				return
+			}
+			intVal, err := strconv.Atoi(strSrc)
 			if err != nil {
-				log.Fatalf("failed to convert %T to int", src)
+				log.Panicf("failed to convert %T to int", src)
 			}
 			dest.Set(reflect.ValueOf(intVal))
 		case reflect.String:
