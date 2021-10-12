@@ -143,7 +143,7 @@ and struct model looks like
     }
 ```
 Since terraform doesn't support child object like json do.So using sub will helps to mock child struct. For using
-`sub` the corresponding entry in terraform schema should be `schema.TypeSet`.
+`sub` the corresponding entry in terraform schema should be `schema.TypeSet` or `schema.TypeList`.
 
 # License
 https://github.com/tshihad/tftags/blob/main/LICENSE

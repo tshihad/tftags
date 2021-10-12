@@ -3,6 +3,7 @@ package tftags
 import (
 	"errors"
 	"fmt"
+	"log"
 	"reflect"
 	"strings"
 
@@ -42,10 +43,22 @@ func recursiveGet(rv reflect.Value, d resourceData, path string, schemaMap inter
 				var newPath string
 				if path != "" {
 					newPath = path + "." + splitTags[0]
-					// if sub then it is *Set, find the hash value and include in path
+					// if sub then it is *Set or List.
 					if isSub {
-						setData := schemaMap.(*schema.Set)
-						newPath = fmt.Sprintf("%s.%d.%s", path, setData.F(setData.List()[0]), splitTags[0])
+						//  find the hash value and include in path if it is a set
+						setData, ok := schemaMap.(*schema.Set)
+						if ok {
+							newPath = fmt.Sprintf("%s.%d.%s", path, setData.F(setData.List()[0]), splitTags[0])
+						} else {
+							_, ok := schemaMap.([]interface{})
+							// get first element of the list. If the list contains more than one elements, except
+							// first element everything will be skipped
+							if ok {
+								newPath = fmt.Sprintf("%s.0.%s", path, splitTags[0])
+							} else {
+								log.Panicf("sub element should be either list or set, but got %T", schemaMap)
+							}
+						}
 					}
 				} else {
 					newPath = splitTags[0]
