@@ -171,9 +171,9 @@ func recursiveSet(rv reflect.Value, d resourceData, computed bool) interface{} {
 		return subMap
 
 	case reflect.Slice:
-		if rv.Len() == 0 {
-			return nil
-		}
+		// if rv.Len() == 0 {
+		// 	return nil
+		// }
 		result := make([]interface{}, rv.Len())
 		// iterate through array and figure it out values. Value can be map, struct,
 		// slice or primitive data type
