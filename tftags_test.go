@@ -324,7 +324,8 @@ func TestSet(t *testing.T) {
 				ID: 12,
 			},
 			want: map[string]interface{}{
-				"id": "12",
+				"id":    "12",
+				"array": []interface{}{},
 			},
 		},
 	}
